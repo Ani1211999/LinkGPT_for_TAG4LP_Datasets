@@ -187,7 +187,8 @@ def main():
     mrr = basics.calculate_mrr(rank_ls=rank_list)
     hit_1 = basics.calculate_hit(rank_ls=rank_list, n=1)
     hit_10 = basics.calculate_hit(rank_ls=rank_list, n=10)
-    print(f"Final result: MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10}")
+    hit_100 = basics.calculate_hit(rank_ls=rank_list, n=100)
+    print(f"Final result: MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10}, Hit@100={hit_100}")
 
 def get_real_shared_prefix_length(sample_prompt_list: List[str], tokenizer):
     """

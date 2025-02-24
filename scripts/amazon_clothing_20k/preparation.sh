@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DATASET_NAME=amazon_clothing_20k
-LINKGPT_DATA_PATH=../../data # you can change this to any other path you like to store the data
-PROJECT_PATH=../..
+LINKGPT_DATA_PATH=$PWD/data # you can change this to any other path you like to store the data
+PROJECT_PATH=$PWD
 
 # Calculate the PPR scores
 python ${PROJECT_PATH}/linkgpt/pairwise_encoding/calc_ppr_scores.py \

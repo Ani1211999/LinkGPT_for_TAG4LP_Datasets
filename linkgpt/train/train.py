@@ -39,8 +39,8 @@ from linkgpt.model.linkgpt_model import LinkGPTForCausalLM, LinkGPTConfig, \
     unfreeze_graph_related_modules, unfreeze_lora_adapter, freeze_all_parameters, \
         save_lora_model, get_model_and_tokenizer, get_tokenizer, load_model_and_tokenizer
 from linkgpt.dataset.linkgpt_dataset import LinkGPTDataset, LinkGPTDataCollator
-from linkgpt.dataset.yn_dataset import YNDataset, YNDatasetConfig
-from linkgpt.dataset.np_dataset import NPDataset, NPDatasetConfig
+from linkgpt.dataset.yn_dataset import YNTargetData, YNDataset, YNDatasetConfig, YNData
+from linkgpt.dataset.np_dataset import NPData, NPDataset, NPDatasetConfig
 from linkgpt.dataset.utils import NODE_START_TOKEN, NODE_TOKEN, PAIRWISE_START_TOKEN, \
     PAIRWISE_TOKEN, LINKGPT_SPECIAL_TOKENS
 from linkgpt.utils import basics
@@ -137,9 +137,16 @@ def main():
             text_emb_path = os.path.join(args.text_embedding_folder_path, f'text_emb_{args.text_embedding_method}_{i}hop.pt')
         text_emb = torch.load(text_emb_path, map_location=device)
         text_emb_list.append(text_emb)
-    
+
     dataset_for_lm = basics.load_pickle(args.dataset_for_lm_path)
+    #print(dataset_for_lm[0])
+    
     ppr_data = torch.load(args.ppr_data_path).to(device)
+    # gnid2text = {
+    #     gnid: dataset_for_lm.data_list[nid].get("title", "")  # Use "title" or another text field
+    #     for nid, gnid in dataset_for_lm.nid2gnid.items()
+    # }
+
     
     lp_dataset = basics.load_pickle(args.lp_dataset_path)
     lp_dataset.config.ablate_pairwise_encoding = args.lp_ablate_pairwise_encoding
@@ -147,21 +154,32 @@ def main():
     lp_dataset.config.learn_text = args.lp_learn_text
     lp_dataset.config.learn_all = args.lp_learn_all
     lp_dataset.config.node_encoding_max_hop = args.max_hop
-    
+ 
     if args.np_dataset_path is not None:
         np_dataset = basics.load_pickle(args.np_dataset_path)
         np_dataset.config.ablate_node_encoding = args.np_ablate_node_encoding
         np_dataset.config.np_learn_all = args.np_learn_all
         np_dataset.config.learn_src_text = args.np_learn_src_text
         np_dataset.config.node_encoding_max_hop = args.max_hop
-
+    
     dgl_graph = tag_dataset_for_lm_to_dgl_graph(dataset_for_lm, include_valid=True).to(device)
     dgl_graph.ndata['feat'] = text_emb_list[0]
+    # print("Number of nodes:", dgl_graph.num_nodes())
+    # print("Number of edges:", dgl_graph.num_edges())
 
+    #tokenizer = get_tokenizer()
+    # config =YNDatasetConfig()
+    # lp_dataset_raw = YNDataset(dgl_graph,gnid2text=gnid2text, config=config, tokenizer=tokenizer)
+    # file_name_with_path = 'data/datasets/arxiv_2023/ft_yn_dataset.pkl'
+    # basics.save_pickle(lp_dataset_raw,file_name_with_path) 
+    #config =NPDatasetConfig()
+    # np_dataset_raw = NPDataset(dgl_graph=dgl_graph,gnid2text=gnid2text, config=config, tokenizer=tokenizer)
+    # file_name_with_path = 'data/datasets/arxiv_2023/ft_np_dataset.pkl'
+    # basics.save_pickle(np_dataset_raw,file_name_with_path) 
     # Load pairwise encoder
     lpformer_dataset = get_lpformer_dataset(args.dataset_name, dataset_for_lm.edge_split, dgl_graph, ppr_data, device)
     lpformer_model = get_lpformer_model(lpformer_dataset, device).to(device) # randomly initialized, not pre-trained
-    
+ 
     # Load model and tokenizer
     hf_parser = HfArgumentParser(llm_tuner_parser._TRAIN_ARGS)
     hf_args_dict = {
@@ -230,6 +248,7 @@ def main():
         
         # do not mix the data in stage 1 so that the model can learn each task well
         for dataset in dataset_list:
+            print(dataset)
             stage1_trainer = Trainer(
                 model=model,
                 args=training_args,

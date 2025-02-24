@@ -1,9 +1,9 @@
 #!/bin/bash
 
 DATASET_NAME=mag_math_20k
-LINKGPT_DATA_PATH=../../data # you can change this to any other path you like to store the data
-PROJECT_PATH=../..
-WANDB_KEY=None # you can set this to your own wandb key
+LINKGPT_DATA_PATH=$PWD/data # you can change this to any other path you like to store the data
+PROJECT_PATH=$PWD
+WANDB_KEY=e4f5a19517da2883a41b85e63af485ed28b8b100 # you can set this to your own wandb key
 LINKGPT_MODEL_NAME=linkgpt-llama2-7b-cgtp
 
 python ${PROJECT_PATH}/linkgpt/train/train.py \

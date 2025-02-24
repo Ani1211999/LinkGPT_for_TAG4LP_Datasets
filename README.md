@@ -23,7 +23,7 @@ This is the official implementation of paper [LinkGPT: Teaching Large Language M
 git clone https://github.com/twelfth-star/LinkGPT.git
 cd LinkGPT
 
-# create the conda environment
+it# create the conda environment
 conda create -n linkgpt python=3.9
 conda activate linkgpt
 

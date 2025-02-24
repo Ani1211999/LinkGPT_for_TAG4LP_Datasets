@@ -388,41 +388,120 @@ class LinkTransformer(nn.Module):
             return (cn_ix, cn_src_ppr, cn_tgt_ppr), (onehop_ix, onehop_src_ppr, onehop_tgt_ppr), (non1hop_ix, non1hop_src_ppr, non1hop_tgt_ppr)
 
 
+    # def get_ppr_vals(self, batch, pair_diff_adj, test_set=False):
+    #     """
+    #     Get the src and tgt ppr vals
+
+    #     `pair_diff_adj` specifies type of nodes we select
+    #     """
+    #     # Additional terms for also choosing scores when ppr=0
+    #     # Multiplication removes any values for nodes not in batch
+    #     # Addition then adds offset to ensure we select when ppr=0
+    #     # All selected scores are +1 higher than their true val
+    #     ppr = self.get_ppr(test_set)
+        
+    #     src_ppr_adj = torch.index_select(ppr, 0, batch[0].to(ppr.device)).to(self.device) * pair_diff_adj + pair_diff_adj
+    #     tgt_ppr_adj = torch.index_select(ppr, 0, batch[1].to(ppr.device)).to(self.device) * pair_diff_adj + pair_diff_adj
+
+    #     # Can now convert ppr scores to dense
+    #     ppr_ix  = src_ppr_adj.coalesce().indices()
+    #     src_ppr = src_ppr_adj.coalesce().values()
+    #     tgt_ppr = tgt_ppr_adj.coalesce().values()
+
+    #     pair_diff_adj = pair_diff_adj.coalesce().values()
+    #     print(f"pair_diff_adj shape: {pair_diff_adj.shape}")
+    #     print(f"src_ppr shape: {src_ppr.shape}")
+    #     print(f"src_ppr != 0 shape: {(src_ppr != 0).shape}")
+    #     valid_mask = (src_ppr != 0)[: pair_diff_adj.shape[0]]  # Ensure the mask matches the size
+    #     pair_diff_adj_dense = pair_diff_adj.to_dense() if pair_diff_adj.is_sparse else pair_diff_adj
+    #     pair_diff_adj_dense = pair_diff_adj_dense[:valid_mask.shape[0]][valid_mask]
+
+    #     #pair_diff_adj = pair_diff_adj[src_ppr != 0]
+
+    #     # If one is 0 so is the other
+    #     
+    #     src_ppr = src_ppr[src_ppr != 0]
+    #     tgt_ppr = tgt_ppr[tgt_ppr != 0]
+    #     valid_mask = src_ppr != 0
+    #     if valid_mask.shape[0] != ppr_ix.shape[1]:  # Ensure mask matches tensor size
+    #         valid_mask = valid_mask[:ppr_ix.shape[1]]
+    #     print(f"ppr_ix shape: {ppr_ix.shape}")  # Expected: [2, 40]
+    #     print(f"src_ppr shape: {src_ppr.shape}")  # Expected: [40]
+    #     print(f"valid_mask shape: {valid_mask.shape}")  # Expected: [40]
+    #     ppr_ix = ppr_ix[:, :valid_mask.shape[0]]  # Trim ppr_ix before applying mask
+    #     ppr_ix = ppr_ix[:, valid_mask]  # Apply mask safely
+
+    #     #ppr_ix = ppr_ix[:, src_ppr != 0]
+        
+    #     ppr_ix = ppr_ix[:, valid_mask]
+
+
+    #     # Remove additional +1 from each ppr val
+    #     src_ppr = (src_ppr - pair_diff_adj) / pair_diff_adj
+    #     tgt_ppr = (tgt_ppr - pair_diff_adj) / pair_diff_adj
+
+    #     return ppr_ix, pair_diff_adj, src_ppr, tgt_ppr
+
     def get_ppr_vals(self, batch, pair_diff_adj, test_set=False):
         """
         Get the src and tgt ppr vals
 
         `pair_diff_adj` specifies type of nodes we select
         """
-        # Additional terms for also choosing scores when ppr=0
-        # Multiplication removes any values for nodes not in batch
-        # Addition then adds offset to ensure we select when ppr=0
-        # All selected scores are +1 higher than their true val
         ppr = self.get_ppr(test_set)
         
         src_ppr_adj = torch.index_select(ppr, 0, batch[0].to(ppr.device)).to(self.device) * pair_diff_adj + pair_diff_adj
         tgt_ppr_adj = torch.index_select(ppr, 0, batch[1].to(ppr.device)).to(self.device) * pair_diff_adj + pair_diff_adj
 
-        # Can now convert ppr scores to dense
+        # Convert sparse tensor values to dense format (Fix for PyTorch 2.x)
         ppr_ix  = src_ppr_adj.coalesce().indices()
         src_ppr = src_ppr_adj.coalesce().values()
         tgt_ppr = tgt_ppr_adj.coalesce().values()
 
         pair_diff_adj = pair_diff_adj.coalesce().values()
-        pair_diff_adj = pair_diff_adj[src_ppr != 0]
-        
-        # If one is 0 so is the other
-        # NOTE: Should be few to no nodes here
+
+        # print(f"pair_diff_adj shape: {pair_diff_adj.shape}")
+        # print(f"src_ppr shape: {src_ppr.shape}")
+        # print(f"src_ppr != 0 shape: {(src_ppr != 0).shape}")
+
+        # Fix 1: Ensure `pair_diff_adj` is dense before masking
+        pair_diff_adj_dense = pair_diff_adj.to_dense() if pair_diff_adj.is_sparse else pair_diff_adj
+        valid_mask = (src_ppr != 0)[: pair_diff_adj_dense.shape[0]]  # Ensure matching sizes
+        pair_diff_adj_dense = pair_diff_adj_dense[:valid_mask.shape[0]][valid_mask]
+
+        # Safe masking for `src_ppr`
         src_ppr = src_ppr[src_ppr != 0]
         tgt_ppr = tgt_ppr[tgt_ppr != 0]
-        ppr_ix = ppr_ix[:, src_ppr != 0]
+        
+        valid_mask = src_ppr != 0
+        if valid_mask.shape[0] != ppr_ix.shape[1]:  # Fix for PyTorch 2.x
+            valid_mask = valid_mask[:ppr_ix.shape[1]]
 
-        # Remove additional +1 from each ppr val
-        src_ppr = (src_ppr - pair_diff_adj) / pair_diff_adj
-        tgt_ppr = (tgt_ppr - pair_diff_adj) / pair_diff_adj
+        # print(f"ppr_ix shape: {ppr_ix.shape}")  # Expected: [2, 40]
+        # print(f"src_ppr shape: {src_ppr.shape}")  # Expected: [40]
+        # print(f"valid_mask shape: {valid_mask.shape}")  # Expected: [40]
 
-        return ppr_ix, pair_diff_adj, src_ppr, tgt_ppr
+        # Fix 2: Ensure ppr_ix and valid_mask match before masking
+        ppr_ix = ppr_ix[:, :valid_mask.shape[0]]  # Trim ppr_ix before applying mask
+        ppr_ix = ppr_ix[:, valid_mask]  # Apply mask safely
 
+        # Fix 3: Prevent division by zero
+        pair_diff_adj_safe = torch.where(pair_diff_adj_dense == 0, torch.ones_like(pair_diff_adj_dense), pair_diff_adj_dense)
+        # src_ppr = (src_ppr - pair_diff_adj_safe) / pair_diff_adj_safe
+        # tgt_ppr = (tgt_ppr - pair_diff_adj_safe) / pair_diff_adj_safe
+        # Ensure src_ppr, tgt_ppr, and pair_diff_adj_safe have the same shape
+        min_size = min(src_ppr.shape[0], tgt_ppr.shape[0], pair_diff_adj_safe.shape[0])
+
+        # Trim tensors to match smallest size
+        src_ppr = src_ppr[:min_size]
+        tgt_ppr = tgt_ppr[:min_size]
+        pair_diff_adj_safe = pair_diff_adj_safe[:min_size]
+
+        # Now perform division safely
+        src_ppr = (src_ppr - pair_diff_adj_safe) / pair_diff_adj_safe
+        tgt_ppr = (tgt_ppr - pair_diff_adj_safe) / pair_diff_adj_safe
+
+        return ppr_ix, pair_diff_adj_safe, src_ppr, tgt_ppr
 
     def drop_pairwise(self, node_ix, src_ppr=None, tgt_ppr=None, node_indicator=None):
         """
@@ -430,6 +509,10 @@ class LinkTransformer(nn.Module):
         """
         num_indices = math.ceil(node_ix.size(1) * (1-self.att_drop))
         indices = torch.randperm(node_ix.size(1))[:num_indices]
+        max_valid_index = min(src_ppr.shape[0], tgt_ppr.shape[0], node_indicator.shape[0]) - 1
+        indices = indices[indices <= max_valid_index]  # Remove out-of-bounds values
+        if torch.isnan(indices).any():
+            print("Warning: NaN detected in `indices` before indexing!")
         node_ix = node_ix[:, indices]
 
         if src_ppr is not None:

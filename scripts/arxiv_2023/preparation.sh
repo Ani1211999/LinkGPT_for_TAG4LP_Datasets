@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATASET_NAME=amazon_sports_20k
+DATASET_NAME=arxiv_2023
 LINKGPT_DATA_PATH=$PWD/data # you can change this to any other path you like to store the data
 PROJECT_PATH=$PWD
 

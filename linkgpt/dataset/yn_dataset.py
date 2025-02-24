@@ -14,7 +14,7 @@ import copy
 
 from ..utils import basics
 from .utils import NODE_START_TOKEN, NODE_TOKEN, PAIRWISE_START_TOKEN, \
-    PAIRWISE_TOKEN, LINKGPT_SPECIAL_TOKENS, IGNORE_INDEX, get_text_with_encoding_token, sample_neg_tgt
+    PAIRWISE_TOKEN, LINKGPT_SPECIAL_TOKENS, IGNORE_INDEX, get_text_with_encoding_token, sample_neg_tgt_new
 
 # for Link Prediction task, using Yes/No (YN) prompt
 
@@ -34,10 +34,15 @@ class YNDatasetConfig:
     num_neg_per_pos: float = 1 # number of negative target nodes for each positive target node
     
     # The following four are for the prompt generation. The wording can be modified to fit different tasks.
-    task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
-    source_node_intro: str = "Source node:\n"
-    candidate_target_node_intro: str = "Candidate target node:\n"
-    connection_question: str = "Is this connected to the source node?\n"
+    # task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
+    # source_node_intro: str = "Source node:\n"
+    # candidate_target_node_intro: str = "Candidate target node:\n"
+    # connection_question: str = "Is this connected to the source node?\n"
+    
+    task_desc: str = ""
+    source_node_intro: str = "This is the source paper:\n"
+    candidate_target_node_intro: str = "This is another paper:\n"
+    connection_question: str = "Is this paper cited by the source paper?\n"
     
     ablate_pairwise_encoding: bool = False
     ablate_node_encoding: bool = False
@@ -69,6 +74,14 @@ class YNDataset(Dataset):
         self.yn_data_list = None
         if self.config.generate_at_initialization:
             self.generate_yn_data_list()
+    def get_gnid2text(self):
+        return self.gnid2text
+    
+    def get_gnid2text_item(self, index:int):
+        return self.gnid2text[0]
+    
+    def get_tokenizer_properties(self):
+        return self.tokenizer.pad_token, self.tokenizer.padding_side, self.tokenizer.special_tokens_map
     
     def generate_yn_data_list(self, num_src_nodes=None):
         yn_data_list = []
@@ -78,7 +91,7 @@ class YNDataset(Dataset):
         for src in trange(total_num):
             pos_tgt_id_ls = self.dgl_graph.successors(src).cpu().tolist()
             neg_tgt_num = round(len(pos_tgt_id_ls) * config.num_neg_per_pos)
-            neg_tgt_id_ls = sample_neg_tgt(num_neg_tgt=neg_tgt_num, pos_tgt_set=set(pos_tgt_id_ls), total_node_num=self.num_nodes)
+            neg_tgt_id_ls = sample_neg_tgt_new(num_neg_tgt=neg_tgt_num, pos_tgt_set=set(pos_tgt_id_ls), total_node_num=self.num_nodes)
             
             pos_tgt_data_ls = [YNTargetData(tgt_node=tgt, label=1) for tgt in pos_tgt_id_ls]
             neg_tgt_data_ls = [YNTargetData(tgt_node=tgt, label=0) for tgt in neg_tgt_id_ls]
@@ -205,10 +218,15 @@ class YNDatasetForEvalConfig:
     num_tgt_per_prompt: int = 4
     num_neg_per_pos: float = 1
     
-    task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
-    source_node_intro: str = "Source node:\n"
-    candidate_target_node_intro: str = "Candidate target node:\n"
-    connection_question: str = "Is this connected to the source node?\n"
+    # task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
+    # source_node_intro: str = "Source node:\n"
+    # candidate_target_node_intro: str = "Candidate target node:\n"
+    # connection_question: str = "Is this connected to the source node?\n"
+    
+    task_desc: str = ""
+    source_node_intro: str = 'This is the source paper:\n'
+    candidate_target_node_intro: str = 'This is another paper:\n'
+    connection_question: str = 'Is this paper cited by the source paper?\n'
     
     ablate_pairwise_encoding: bool = False
     ablate_node_encoding: bool = False
@@ -235,7 +253,23 @@ class YNDatasetForEval(Dataset):
         self.yn_eval_data_list = None
         if self.config.generate_at_initialization:
             self.generate_yn_eval_data_list()
-        
+    def get_question_data(self):
+        return self.question_data
+    
+    def get_gnid2text(self):
+        return self.gnid2text
+    
+    def get_graph(self):
+        return self.dgl_graph
+    def get_config(self):
+        return self.config
+    def get_tokenizer(self):
+        return self.tokenizer
+    def __eq__(self, other):
+        if isinstance(other, YNDatasetForEval):
+            if self.question_data != other.question_data:
+                return False
+            return True
     def generate_yn_eval_data_list(self, num_questions=None):
         yn_eval_data_list = []
         
@@ -249,7 +283,7 @@ class YNDatasetForEval(Dataset):
             all_pos_neighbors = self.dgl_graph.successors(src).cpu().tolist()
             pos_neighbors = random.sample(all_pos_neighbors, min(len(all_pos_neighbors), config.num_tgt_per_prompt // 2))
             neg_neighbor_num = round(len(pos_neighbors) * config.num_neg_per_pos)
-            neg_neighbors = sample_neg_tgt(num_neg_tgt=neg_neighbor_num, pos_tgt_set=set(all_pos_neighbors), total_node_num=self.num_nodes)
+            neg_neighbors = sample_neg_tgt_new(num_neg_tgt=neg_neighbor_num, pos_tgt_set=set(all_pos_neighbors), total_node_num=self.num_nodes)
 
             pos_neighbor_data_ls = [YNTargetData(tgt_node=tgt, label=1) for tgt in pos_neighbors]
             neg_neighbor_data_ls = [YNTargetData(tgt_node=tgt, label=0) for tgt in neg_neighbors]

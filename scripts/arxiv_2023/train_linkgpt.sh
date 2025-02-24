@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DATASET_NAME=amazon_clothing_20k
+DATASET_NAME=arxiv_2023
 LINKGPT_DATA_PATH=$PWD/data # you can change this to any other path you like to store the data
 PROJECT_PATH=$PWD
 WANDB_KEY=e4f5a19517da2883a41b85e63af485ed28b8b100 # you can set this to your own wandb key
@@ -39,5 +39,5 @@ python ${PROJECT_PATH}/linkgpt/train/train.py \
 	--run_name ${LINKGPT_MODEL_NAME} \
 	--freeze_graph_related_modules_in_stage2 \
 	--stage1_task np,lp \
-	--stage2_task none \
-	--node_proj_num_layers 2 \
+	--stage2_task np,lp \
+	--node_proj_num_layers 1 \

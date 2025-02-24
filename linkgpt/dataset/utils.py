@@ -34,6 +34,17 @@ def sample_neg_tgt(num_neg_tgt: int, pos_tgt_set: Set[int], total_node_num: int)
         if not any(neg_tgt in pos_tgt_set for neg_tgt in neg_tgt_list):
             return neg_tgt_list
 
+def sample_neg_tgt_new(num_neg_tgt: int, pos_tgt_set: Set[int], total_node_num: int):
+    """
+    Efficiently sample `num_neg_tgt` negative targets that are NOT in `pos_tgt_set`.
+    """
+    # Get all possible negative targets
+    valid_negatives = list(set(range(total_node_num)) - pos_tgt_set)
+
+    # Ensure we don’t sample more than available negatives
+    num_neg_tgt = min(num_neg_tgt, len(valid_negatives))
+
+    return random.sample(valid_negatives, num_neg_tgt) 
 def get_text_with_encoding_token(center, config, gnid2text, do_pairwise=True):
     """
     Get the text with the encoding tokens for the prompt

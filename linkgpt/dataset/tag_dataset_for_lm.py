@@ -19,7 +19,7 @@ class TAGDatasetForLM():
         """
         self.text_field = text_field
         self.longer_text_field = longer_text_field
-        
+        print("Inside main class!!")
         self.nid_list = list(nid2data.keys())
         self.nid2gnid = {nid: i for i, nid in enumerate(self.nid_list)}
         
@@ -41,6 +41,14 @@ class TAGDatasetForLM():
     def __getitem__(self, gnid: int):
         return self.data_list[gnid]
     
+    def get_pairitem(self, index: int):
+        return self.pair_list[index]
+    
+    def len_pairitems(self):
+        return len(self.pair_list)
+    
+    def get_textitem(self):
+        return self.longer_text_field
     def __len__(self):
         return len(self.data_list)
     
@@ -86,6 +94,7 @@ class TAGDatasetForLM():
         num_neg_dst: the number of negative target nodes to sample for each src node. 
         In this paper, we set it to 150 for LinkGPT w/o retrieval and 1800 for LinkGPT w/ retrieval.
         """
+        print("Edge Split!!")
         if verbose:
             print('Generating edge split...')
             print(f'Num of negative dst per src: {num_neg_dst}')
@@ -122,8 +131,10 @@ def tag_dataset_for_lm_to_dgl_graph(dataset_for_lm: TAGDatasetForLM, device: str
     """
     Convert a TAGDatasetForLM object to a DGL graph object.
     """
+    print("Inside LM to Graph object conversion!!")
     num_nodes = len(dataset_for_lm)
     edge_split = dataset_for_lm.edge_split
+    
     if include_valid:
         src_ls = torch.tensor(edge_split['train']['source_node'] + edge_split['valid']['source_node'])
         dst_ls = torch.tensor(edge_split['train']['target_node'] + edge_split['valid']['target_node'])

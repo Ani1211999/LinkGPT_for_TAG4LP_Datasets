@@ -30,20 +30,20 @@ class LinkGPTDataset(Dataset):
         self.dataset_lengths = [len(ds) for ds in dataset_list]
         self.cumulative_lengths = [sum(self.dataset_lengths[:i+1]) for i in range(len(self.dataset_lengths))]
         
-        self.lengths = []
+        #self.lengths = []
         
         # This was added to group the texts by length, but it's abandoned in the current version. Please ignore it.
-        self.column_names = ['length'] 
-        for ds in dataset_list:
-            self.lengths += ds['length']
+        # self.column_names = ['length'] 
+        # for ds in dataset_list:
+        #     self.lengths += ds['length']
                     
     def __len__(self):
         return sum(self.dataset_lengths)
     
     def __getitem__(self, index: int):
-        if index == 'length':
-            # This was added to group the texts by length, but it's abandoned in the current version. Please ignore it.
-            return self.lengths
+        # if index == 'length':
+        #     # This was added to group the texts by length, but it's abandoned in the current version. Please ignore it.
+        #     return self.lengths
         
         if index < 0 or index >= self.__len__():
             raise IndexError("Index out of range")

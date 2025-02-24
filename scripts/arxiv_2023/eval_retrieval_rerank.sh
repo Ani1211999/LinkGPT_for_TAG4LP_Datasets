@@ -1,10 +1,11 @@
 #!/bin/bash
 
-DATASET_NAME=amazon_clothing_20k
-LINKGPT_DATA_PATH=$PWD/data # you can change this to any other path you like to store the data
-PROJECT_PATH=$PWD
-WANDB_KEY=e4f5a19517da2883a41b85e63af485ed28b8b100 # you can set this to your own wandb key
+DATASET_NAME=amazon_sports_20k
+LINKGPT_DATA_PATH=../../data # you can change this to any other path you like to store the data
+PROJECT_PATH=../..
 LINKGPT_MODEL_NAME=linkgpt-llama2-7b-cgtp
+WANDB_KEY=None # you can set this to your own wandb key
+
 # evaluate the pipeline without retrieval
 python ${PROJECT_PATH}/linkgpt/eval/eval_yn.py \
 	--model_name_or_path meta-llama/Llama-2-7b-hf \
@@ -39,12 +40,12 @@ python ${PROJECT_PATH}/linkgpt/retrieval/generate_neighbor_predictions.py \
     --max_hop 0 \
     --device cuda \
     --fp16 \
-    --max_context_neighbors 2 \
+    --max_context_neighbors 0 \
     --max_new_tokens 50 \
     --max_num 200 \
     --apply_get_diverse_answers \
-    --top_p 0.8 \
-    --diversity_penalty 1.2 \
+    --top_p 0.9 \
+    --diversity_penalty 0.9 \
     --num_beam_groups 5 \
     --num_beam_per_group 3
 
