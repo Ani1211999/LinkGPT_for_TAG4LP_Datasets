@@ -78,7 +78,8 @@ Update the _get_prompts__() function for handling the new dataset prompts.
 ## Language Model Dataset Generator
 1. Generate the dataset for language model by running the bash file _run_lm_dataset_generation.sh_ present in the _scripts/{dataset_name}_ folder.  
 
-2. Edit the parameters like dataset name, text attributes for TAGs and the dataset paths accordingly.
+2. Edit the parameters like dataset name, text attributes etc. for TAGs and the dataset paths accordingly.
+   
 ![image](https://github.com/user-attachments/assets/4d08f9cf-3f6b-4d89-a1f9-c9130ffe52aa)
 
 3. Run the file _generate_lm_dataset.py_ present in the _linkgpt/dataset/_ folder by executing the command in the terminal as shown below.
@@ -87,6 +88,7 @@ Update the _get_prompts__() function for handling the new dataset prompts.
 bash scripts/{dataset_name}/run_lm_dataset_generation.sh
 ```
 4. If the script has successfully run, a file named _dataset_for_lm.pkl_ must be visible in the _data/datasets/{dataset_name}_ folder.
+
    ![image](https://github.com/user-attachments/assets/187b5168-761e-4a8b-8c71-b10dcd5a870e)
 
      
@@ -99,6 +101,7 @@ bash scripts/{dataset_name}/run_lm_dataset_generation.sh
 bash scripts/{dataset_name}/preparation.sh
 ```
 3. If the script has successfully run, two files named _ppr_data.pt_ and _text_emb_cgtp.pt_ for the Personalized PageRank Scores and Text Embeddings based on Contrastive Graph-Text preTraining will created in the _data/datasets/{dataset_name}_ folder.
+   
    ![image](https://github.com/user-attachments/assets/dde49bf9-2a07-4457-9a03-9781d26573bc)
 
   
@@ -106,6 +109,7 @@ bash scripts/{dataset_name}/preparation.sh
 ## Link Prediction and Neighbor Prediction Dataset Generation
 1. Generate the Link Prediction Dataset - `ft_yn_dataset.pkl` and  Neighbor Prediction Dataset - `ft_np_dataset.pkl` based on the Language Model Dataset - `dataset_for_lm.pkl`.
 2. Change the parameter values for dataset name, text field attributes as per the Language Model Dataset accordingly in the bash file _run_np_lp_dataset_generation.sh_ present in the _scripts/{dataset_name}_ as per your dataset.
+   
    ![image](https://github.com/user-attachments/assets/021f5701-a9f6-48a9-99a9-a8f80eb1febe)
 
 3. Execute the following command in the terminal-
@@ -115,6 +119,7 @@ bash scripts/{dataset_name}/run_np_lp_dataset_generation.sh
 ```
 
 4. If the script has successfully run, two files named _ft_yn_dataset.pkl_ and _ft_np_dataset.pkl_ for the link prediction and neighbor prediction training tasks must be visible in the _data/datasets/{dataset_name}_ folder.
+   
   
    ![image](https://github.com/user-attachments/assets/bf8f4088-1ebb-4e78-af4e-57ad38f76132)
    
@@ -126,13 +131,14 @@ bash scripts/{dataset_name}/run_np_lp_dataset_generation.sh
 
    ![image](https://github.com/user-attachments/assets/fc6ab733-0477-488f-a628-a9d10a2fb62f)
 
-4. Execute the following command in the terminal-
+3. Execute the following command in the terminal-
 
 ```bash
 bash scripts/{dataset_name}/run_eval_dataset_generation.sh
 ```
 
-5. If the script has successfully run, a file named _eval_yn_dataset_4_examples.pkl_ must be visible in the _data/datasets/{dataset_name}_ folder.
+4. If the script has successfully run, a file named _eval_yn_dataset_4_examples.pkl_ must be visible in the _data/datasets/{dataset_name}_ folder.
+   
    ![image](https://github.com/user-attachments/assets/c48be3ee-f0c9-42fb-b9ec-55b72e7363b0)
    
 
