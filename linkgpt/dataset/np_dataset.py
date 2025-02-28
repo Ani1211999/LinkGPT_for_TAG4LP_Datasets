@@ -28,12 +28,10 @@ class NPDatasetConfig:
     max_neighbor_num_per_prompt: float = 2 # the maximum number of neighbors per prompt
     
     # The following four are for the prompt generation. The wording can be modified to fit different tasks.
-    # task_desc: str = ""
-    # source_node_intro: str = "Source node:\n"
-    # question: str = "What neighbors does this node have?\n"
-    task_desc: str= ''
-    source_node_intro: str= 'This is the source paper:\n'
-    question: str= 'What papers are cited by the source paper?\n'
+    task_desc: str = ""
+    source_node_intro: str = "Source node:\n"
+    question: str = "What neighbors does this node have?\n"
+   
     ablate_node_encoding: bool = False
     node_encoding_max_hop: int = 0
     # the maximum hop to encode the node
@@ -61,14 +59,6 @@ class NPDataset(Dataset):
         self.np_data_list = None
         if self.config.generate_at_initialization:
             self.generate_np_data_list()
-    
-    def get_gnid2text(self):
-        return self.gnid2text
-    
-    def get_gnid2text_item(self, index:int):
-        return self.gnid2text[0]
-    def get_tokenizer_properties(self):
-        return self.tokenizer.pad_token, self.tokenizer.padding_side, self.tokenizer.special_tokens_map
         
     def generate_np_data_list(self, num_src_nodes=None):
         np_data_list = []

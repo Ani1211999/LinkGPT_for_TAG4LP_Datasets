@@ -33,16 +33,11 @@ class YNDatasetConfig:
     num_tgt_per_prompt: int = 4 # number of target nodes per prompt
     num_neg_per_pos: float = 1 # number of negative target nodes for each positive target node
     
-    # The following four are for the prompt generation. The wording can be modified to fit different tasks.
-    # task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
-    # source_node_intro: str = "Source node:\n"
-    # candidate_target_node_intro: str = "Candidate target node:\n"
-    # connection_question: str = "Is this connected to the source node?\n"
-    
-    task_desc: str = ""
-    source_node_intro: str = "This is the source paper:\n"
-    candidate_target_node_intro: str = "This is another paper:\n"
-    connection_question: str = "Is this paper cited by the source paper?\n"
+    #The following four are for the prompt generation. The wording can be modified to fit different tasks.
+    task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
+    source_node_intro: str = "Source node:\n"
+    candidate_target_node_intro: str = "Candidate target node:\n"
+    connection_question: str = "Is this connected to the source node?\n"
     
     ablate_pairwise_encoding: bool = False
     ablate_node_encoding: bool = False
@@ -74,14 +69,6 @@ class YNDataset(Dataset):
         self.yn_data_list = None
         if self.config.generate_at_initialization:
             self.generate_yn_data_list()
-    def get_gnid2text(self):
-        return self.gnid2text
-    
-    def get_gnid2text_item(self, index:int):
-        return self.gnid2text[0]
-    
-    def get_tokenizer_properties(self):
-        return self.tokenizer.pad_token, self.tokenizer.padding_side, self.tokenizer.special_tokens_map
     
     def generate_yn_data_list(self, num_src_nodes=None):
         yn_data_list = []
@@ -218,15 +205,10 @@ class YNDatasetForEvalConfig:
     num_tgt_per_prompt: int = 4
     num_neg_per_pos: float = 1
     
-    # task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
-    # source_node_intro: str = "Source node:\n"
-    # candidate_target_node_intro: str = "Candidate target node:\n"
-    # connection_question: str = "Is this connected to the source node?\n"
-    
-    task_desc: str = ""
-    source_node_intro: str = 'This is the source paper:\n'
-    candidate_target_node_intro: str = 'This is another paper:\n'
-    connection_question: str = 'Is this paper cited by the source paper?\n'
+    task_desc: str = "Determine whether there is a link between the source node and the candidate nodes.\n"
+    source_node_intro: str = "Source node:\n"
+    candidate_target_node_intro: str = "Candidate target node:\n"
+    connection_question: str = "Is this connected to the source node?\n"
     
     ablate_pairwise_encoding: bool = False
     ablate_node_encoding: bool = False
@@ -253,23 +235,7 @@ class YNDatasetForEval(Dataset):
         self.yn_eval_data_list = None
         if self.config.generate_at_initialization:
             self.generate_yn_eval_data_list()
-    def get_question_data(self):
-        return self.question_data
-    
-    def get_gnid2text(self):
-        return self.gnid2text
-    
-    def get_graph(self):
-        return self.dgl_graph
-    def get_config(self):
-        return self.config
-    def get_tokenizer(self):
-        return self.tokenizer
-    def __eq__(self, other):
-        if isinstance(other, YNDatasetForEval):
-            if self.question_data != other.question_data:
-                return False
-            return True
+   
     def generate_yn_eval_data_list(self, num_questions=None):
         yn_eval_data_list = []
         

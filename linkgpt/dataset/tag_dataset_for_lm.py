@@ -19,7 +19,6 @@ class TAGDatasetForLM():
         """
         self.text_field = text_field
         self.longer_text_field = longer_text_field
-        print("Inside main class!!")
         self.nid_list = list(nid2data.keys())
         self.nid2gnid = {nid: i for i, nid in enumerate(self.nid_list)}
         
@@ -94,7 +93,6 @@ class TAGDatasetForLM():
         num_neg_dst: the number of negative target nodes to sample for each src node. 
         In this paper, we set it to 150 for LinkGPT w/o retrieval and 1800 for LinkGPT w/ retrieval.
         """
-        print("Edge Split!!")
         if verbose:
             print('Generating edge split...')
             print(f'Num of negative dst per src: {num_neg_dst}')

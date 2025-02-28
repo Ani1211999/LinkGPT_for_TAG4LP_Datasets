@@ -43,24 +43,10 @@ from linkgpt.dataset.yn_dataset import YNTargetData, YNDataset, YNDatasetConfig,
 from linkgpt.dataset.np_dataset import NPData, NPDataset, NPDatasetConfig
 from linkgpt.dataset.utils import NODE_START_TOKEN, NODE_TOKEN, PAIRWISE_START_TOKEN, \
     PAIRWISE_TOKEN, LINKGPT_SPECIAL_TOKENS, sample_neg_tgt_new
-from linkgpt.utils import basics
+from linkgpt.utils import basics, prompts
 import dgl
 import torch
 import random
-
-def generate_negative_samples(dgl_graph, src_nodes, num_neg=1):
-    """
-    Generate negative target samples for each source node.
-    """
-    num_nodes = dgl_graph.num_nodes()
-    negative_samples = []
-    
-    for src in src_nodes:
-        pos_neighbors = set(dgl_graph.successors(src).tolist())  # Get actual connections
-        neg_samples = sample_neg_tgt_new(num_neg, pos_neighbors, num_nodes)  # Use new function
-        negative_samples.append(neg_samples)
-    
-    return negative_samples
 
 def main():
     basics.set_seeds(42)
@@ -75,6 +61,7 @@ def main():
     parser.add_argument('--dataset_for_lm_path', required=True)
     parser.add_argument('--ppr_data_path', required=True)
     parser.add_argument('--dataset_name', required=True)
+    parser.add_argument('--text_field_attr', required=True)
     parser.add_argument('--device_setting', default=None, choices=['cpu', 'cuda', 'cuda:0', 'cuda:1', 'cuda:2', 'cuda:3'])
 
    
@@ -94,25 +81,30 @@ def main():
             text_emb_path = os.path.join(args.text_embedding_folder_path, f'text_emb_{args.text_embedding_method}_{i}hop.pt')
         text_emb = torch.load(text_emb_path, map_location=device)
         text_emb_list.append(text_emb)
-
+    
+    #Load the LM Dataset
     dataset_for_lm = basics.load_pickle(args.dataset_for_lm_path)
-    print(dataset_for_lm[0])
     
     ppr_data = torch.load(args.ppr_data_path).to(device)
+    text_field_attr = args.text_field_attr
+    #Create dictionary with the node indices and their respective text field values
+    '''For example: gnid2text ={0:'Cloud Computing', 1:'AI',...}''' 
     gnid2text = {
-        gnid: dataset_for_lm.data_list[nid].get("title", "")  # Use "title" or another text field
+        gnid: dataset_for_lm.data_list[nid].get(text_field_attr, "")  # Use "title" or another text field
         for nid, gnid in dataset_for_lm.nid2gnid.items()
     }
 
+    #Create a dgl graph based on the LM Dataset
     dgl_graph = tag_dataset_for_lm_to_dgl_graph(dataset_for_lm, include_valid=True).to(device)
     dgl_graph.ndata['feat'] = text_emb_list[0]
-    print("Number of nodes:", dgl_graph.num_nodes())
-    print("Number of edges:", dgl_graph.num_edges())
+    print("Number of node in the graph:", dgl_graph.num_nodes())
+    print("Number of edges in the graph:", dgl_graph.num_edges())
     test_src_nodes = dataset_for_lm.edge_split['test']['source_node']
     test_tgt_nodes = dataset_for_lm.edge_split['test']['target_node']
-    test_neg_nodes = generate_negative_samples(dgl_graph, test_src_nodes, num_neg=1)
-    print(len(test_src_nodes),len(test_tgt_nodes),len(test_neg_nodes)) #All three values must be the same.
-    
+    test_neg_nodes = dataset_for_lm.edge_split['test'][ 'target_node_neg']
+    print(f"Number of source nodes: {len(test_src_nodes)},len(test_tgt_nodes),len(test_neg_nodes)") 
+    print(f"Number of target nodes: {len(test_tgt_nodes)}")
+    print(f"Number of negative target nodes: {len(test_neg_nodes)}") #All three values must be the same.
     question_data = {
         "source_node": test_src_nodes,
         "target_node": test_tgt_nodes,
@@ -120,12 +112,22 @@ def main():
     }
 
     print("Sample question_data:", {k: v[:5] for k, v in question_data.items()})  
-
+    
+    #Load the LM tokenizer
     tokenizer = get_tokenizer()
-    config =YNDatasetForEvalConfig()
-    eval_dataset_raw = YNDatasetForEval(dgl_graph=dgl_graph,question_data=question_data, gnid2text=gnid2text, config=config, tokenizer=tokenizer)
+    
+    #Creating the test set for evaluation
+    yn_eval_config =YNDatasetForEvalConfig()
+    #Update the prompts for LLM as per the dataset
+    yn_prompts = prompts.get_prompts(dataset_name=args.dataset_name,task_name='yn',allow_general_prompts=False)
+    yn_eval_config.task_desc= yn_prompts['task_desc']
+    yn_eval_config.source_node_intro= yn_prompts['source_node_intro']
+    yn_eval_config.candidate_target_node_intro= yn_prompts['candidate_target_node_intro']
+    yn_eval_config.connection_question= yn_prompts['connection_question']
+    
+    eval_dataset = YNDatasetForEval(dgl_graph=dgl_graph,question_data=question_data, gnid2text=gnid2text, config=yn_eval_config, tokenizer=tokenizer)
     file_name_with_path = f'data/datasets/{args.dataset_name}/eval_yn_dataset_4_examples.pkl'
-    basics.save_pickle(eval_dataset_raw,file_name_with_path) 
+    basics.save_pickle(eval_dataset,file_name_with_path) 
     
 if __name__ == '__main__':
     main()

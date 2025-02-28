@@ -45,7 +45,7 @@ general_prompts = {
 def get_prompts(dataset_name: str, task_name: str, allow_general_prompts: bool = True):
     if dataset_name.startswith('amazon'):
         prompts = copurchasing_prompts
-    elif dataset_name.startswith('mag'):
+    elif dataset_name.startswith('mag') or dataset_name.startswith('arxiv'):
         prompts = citation_prompts
     else:
         if allow_general_prompts:

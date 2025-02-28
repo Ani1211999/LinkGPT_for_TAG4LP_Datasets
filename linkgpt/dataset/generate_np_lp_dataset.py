@@ -43,7 +43,7 @@ from linkgpt.dataset.yn_dataset import YNTargetData, YNDataset, YNDatasetConfig,
 from linkgpt.dataset.np_dataset import NPData, NPDataset, NPDatasetConfig
 from linkgpt.dataset.utils import NODE_START_TOKEN, NODE_TOKEN, PAIRWISE_START_TOKEN, \
     PAIRWISE_TOKEN, LINKGPT_SPECIAL_TOKENS
-from linkgpt.utils import basics
+from linkgpt.utils import basics, prompts
 
 
 def main():
@@ -60,6 +60,7 @@ def main():
     parser.add_argument('--ppr_data_path', required=True)
     parser.add_argument('--output_dir', required=True)
     parser.add_argument('--dataset_name', required=True)
+    parser.add_argument('--text_field_attr', required=True)
     parser.add_argument('--device_setting', default=None, choices=['cpu', 'cuda', 'cuda:0', 'cuda:1', 'cuda:2', 'cuda:3'])
 
     
@@ -86,30 +87,52 @@ def main():
     print(dataset_for_lm[0])
     
     ppr_data = torch.load(args.ppr_data_path).to(device)
+    dataset_name = args.dataset_name
+    text_field_attr = args.text_field_attr
+    #Create dictionary with the node indices and their respective text field values
+    '''For example: gnid2text ={0:'Cloud Computing', 1:'AI',...}''' 
     gnid2text = {
-        gnid: dataset_for_lm.data_list[nid].get("title", "")  # Use "title" or another text field
+        gnid: dataset_for_lm.data_list[nid].get(text_field_attr, "")  # Use "title" or another text field
         for nid, gnid in dataset_for_lm.nid2gnid.items()
     }
-    print(f'The title of the first paper is: {gnid2text[0]}')
+    print(f'The text field attribute value of the first node is: {gnid2text[0]}')
     print(f"The dictionary has {len(gnid2text)} nodes..") #Must match the total number of nodes in the dataset
+    
+    #Create a dgl graph based on the LM Dataset
     dgl_graph = tag_dataset_for_lm_to_dgl_graph(dataset_for_lm, include_valid=True).to(device)
     dgl_graph.ndata['feat'] = text_emb_list[0]
-    print("Number of nodes:", dgl_graph.num_nodes())
-    print("Number of edges:", dgl_graph.num_edges())
+    print("Number of nodes in the graph:", dgl_graph.num_nodes())
+    print("Number of edges in the graph:", dgl_graph.num_edges())
 
+    #Load the LM tokenizer
     tokenizer = get_tokenizer()
-    config =YNDatasetConfig()
-    lp_dataset_raw = YNDataset(dgl_graph,gnid2text=gnid2text, config=config, tokenizer=tokenizer)
-    print(type(lp_dataset_raw))
+    
+    #Create the link prediction dataset
+    yn_config =YNDatasetConfig()
+    #Update the prompts for LLM as per the dataset
+    yn_prompts = prompts.get_prompts(dataset_name=dataset_name,task_name='yn',allow_general_prompts=False)
+    yn_config.task_desc= yn_prompts['task_desc']
+    yn_config.source_node_intro= yn_prompts['source_node_intro']
+    yn_config.candidate_target_node_intro= yn_prompts['candidate_target_node_intro']
+    yn_config.connection_question= yn_prompts['connection_question']
+    lp_dataset = YNDataset(dgl_graph,gnid2text=gnid2text, config=yn_config, tokenizer=tokenizer)
+    print(f"Link Prediction dataset class type:{type(lp_dataset)}")
     file_name_with_path = f'data/datasets/{args.dataset_name}/ft_yn_dataset.pkl'
-    basics.save_pickle(lp_dataset_raw,file_name_with_path) 
+    #Dump the Link Prediction dataset into a suitable location
+    basics.save_pickle(lp_dataset,file_name_with_path) 
     
-    config =NPDatasetConfig()
-    np_dataset_raw = NPDataset(dgl_graph=dgl_graph,gnid2text=gnid2text, config=config, tokenizer=tokenizer)
-    print(type(np_dataset_raw))
+    #Create the neighbor prediction dataset
+    np_config =NPDatasetConfig()
+    #Update the prompts for LLM as per the dataset
+    np_prompts = prompts.get_prompts(dataset_name=dataset_name,task_name='np',allow_general_prompts=False)
+    np_config.task_desc= np_prompts['task_desc']
+    np_config.source_node_intro= np_prompts['source_node_intro']
+    np_config.question= np_prompts['question']
+    np_dataset = NPDataset(dgl_graph=dgl_graph,gnid2text=gnid2text, config=np_config, tokenizer=tokenizer)
+    print(f"Neighbor Prediction dataset class type:{type(np_dataset)}")
     file_name_with_path = f'data/datasets/{args.dataset_name}/ft_np_dataset.pkl'
-    basics.save_pickle(np_dataset_raw,file_name_with_path) 
+    #Dump the Neighbor Prediction dataset into a suitable location
+    basics.save_pickle(np_dataset,file_name_with_path) 
     
-
 if __name__ == '__main__':
     main()

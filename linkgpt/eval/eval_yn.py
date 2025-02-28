@@ -165,7 +165,8 @@ def main():
                 mrr = basics.calculate_mrr(rank_ls=rank_list)
                 hit_1 = basics.calculate_hit(rank_ls=rank_list, n=1)
                 hit_10 = basics.calculate_hit(rank_ls=rank_list, n=10)
-                wandb.log({'rank': rank, 'MRR': mrr, 'Hit@1': hit_1, 'Hit@10': hit_10,}, step=idx)
+                hit_100 = basics.calculate_hit(rank_ls=rank_list, n=100)
+                wandb.log({'rank': rank, 'MRR': mrr, 'Hit@1': hit_1, 'Hit@10': hit_10, 'Hit@100':hit_100}, step=idx)
             else:
                 wandb.log({'rank': rank,}, step=idx)
         else:
@@ -173,7 +174,8 @@ def main():
                 mrr = basics.calculate_mrr(rank_ls=rank_list)
                 hit_1 = basics.calculate_hit(rank_ls=rank_list, n=1)
                 hit_10 = basics.calculate_hit(rank_ls=rank_list, n=10)
-                print(f"idx={idx}, rank={rank}, MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10}")
+                hit_100 = basics.calculate_hit(rank_ls=rank_list, n=100)
+                print(f"idx={idx}, rank={rank}, MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10},'Hit@100':{hit_100}")
             else:
                 print(f"idx={idx}, rank={rank}")
         
@@ -189,7 +191,11 @@ def main():
     hit_10 = basics.calculate_hit(rank_ls=rank_list, n=10)
     hit_100 = basics.calculate_hit(rank_ls=rank_list, n=100)
     print(f"Final result: MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10}, Hit@100={hit_100}")
-
+    results = f"Final result: MRR={mrr}, Hit@1={hit_1}, Hit@10={hit_10}, Hit@100={hit_100}"
+    with open('results.txt','w') as file:
+        file.write(results)
+        
+    
 def get_real_shared_prefix_length(sample_prompt_list: List[str], tokenizer):
     """
     Get the length of the shared prefix of the sample_prompt
